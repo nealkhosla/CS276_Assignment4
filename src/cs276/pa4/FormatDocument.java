@@ -83,7 +83,7 @@ public class FormatDocument {
 	 * Creates the various kinds of term frequencies (url, title, body, header, and anchor)
 	 * You can override this if you'd like, but it's likely that your concrete classes will share this implementation.
 	 */
-	public static Map<String,Map<String, Double>> getDocTermFreqs(Document d, Query q) {
+	private static Map<String,Map<String, Double>> getDocTermFreqs(Document d, Query q) {
 		// Map from tf type -> queryWord -> score
 		Map<String,Map<String, Double>> tfs = new HashMap<String,Map<String, Double>>();
 		Map<String,Double> url = new HashMap<String,Double>();
@@ -113,7 +113,7 @@ public class FormatDocument {
 	
 	//*********** Straight from Assignment 3 End ***********//
 	
-	public static Map<String,Double> getQueryIDFS(Query q, Map<String, Double> idfs){
+	private static Map<String,Double> getQueryIDFS(Query q, Map<String, Double> idfs){
 		Map<String,Double> query = new HashMap<String,Double>(1);
 		List<String> words = q.words;
 		HashSet<String> seen = new HashSet<String>();
@@ -129,11 +129,29 @@ public class FormatDocument {
 		return query;
 	}
 	
-	public static double dotProduct(Map<String,Double> a, Map<String,Double> b){
-		return 0.0;
+	private static double dotProduct(Map<String,Double> a, Map<String,Double> b){
+		double score = 0.0;
+		for (Map.Entry<String, Double> entry : a.entrySet()){
+			String key = entry.getKey();
+			if(b.containsKey(key)){
+				score = score + entry.getValue()*b.get(key);
+			}
+		}
+		return score;
 	}
 	
 	public static double[] createInstanceVector(Document d, Query q, Map<String, Double> idfs, Map<String, Map<String, Double>> trainRels){
-		return null;
+		Map<String,Map<String, Double>> docMap = getDocTermFreqs(d,q);
+		Map<String,Double> queryMap = getQueryIDFS(q,idfs);
+		double[] vector = new double[TFTYPES.length + 1];
+		for(int i = 0; i < TFTYPES.length; i++){
+			String key = TFTYPES[i];
+			double score = dotProduct(queryMap,docMap.get(key));
+			vector[i] = score;
+		}
+		Map<String,Double> urlScores = trainRels.get(q.query);
+		double rel = urlScores.get(d.url);
+		vector[TFTYPES.length] = rel;
+		return vector;
 	}
 }

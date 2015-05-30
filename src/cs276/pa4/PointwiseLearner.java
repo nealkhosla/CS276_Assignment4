@@ -35,10 +35,20 @@ public class PointwiseLearner extends Learner {
 		dataset = new Instances("train_dataset", attributes, 0);
 		
 		/* Add data */
-		double[] instance = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+		/*double[] instance = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
 		Instance inst = new DenseInstance(1.0, instance); 
-		dataset.add(inst);
-		
+		dataset.add(inst);*/
+		// query -> documents list
+		Map<Query,List<Document>> trainData = null;
+		// query -> (url -> score)
+		// This needs to be the last field in the double[] instance array
+		Map<String, Map<String, Double>> trainRels = null;
+		try{
+			trainData = Util.loadTrainData(train_data_file);
+			trainRels = Util.loadRelData(train_rel_file);
+		}catch(Exception e){
+			System.err.println("Error loading training data");
+		}
 		/* Set last attribute as target */
 		dataset.setClassIndex(dataset.numAttributes() - 1);
 		

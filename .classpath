@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" output="bin" path="src"/>
+	<classpathentry kind="var" path="JRE_LIB" rootpath="JRE_SRCROOT" sourcepath="JRE_SRC"/>
+	<classpathentry kind="con" path="/home/cleo/Documents/Code/CS_276_Assignments/cs276-pa4/bin"/>
+	<classpathentry kind="lib" path="/home/cleo/Documents/Code/CS_276_Assignments/cs276-pa4/lib/ejml-0.25.jar"/>
+	<classpathentry kind="lib" path="/home/cleo/Documents/Code/CS_276_Assignments/cs276-pa4/lib/weka.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

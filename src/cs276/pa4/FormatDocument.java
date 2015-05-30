@@ -149,9 +149,13 @@ public class FormatDocument {
 			double score = dotProduct(queryMap,docMap.get(key));
 			vector[i] = score;
 		}
-		Map<String,Double> urlScores = trainRels.get(q.query);
-		double rel = urlScores.get(d.url);
-		vector[TFTYPES.length] = rel;
+		if(trainRels != null){
+			Map<String,Double> urlScores = trainRels.get(q.query);
+			double rel = urlScores.get(d.url);
+			vector[TFTYPES.length] = rel;
+		}else{
+			vector[TFTYPES.length] = 0;
+		}
 		return vector;
 	}
 }

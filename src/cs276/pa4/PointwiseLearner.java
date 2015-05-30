@@ -1,9 +1,11 @@
 package cs276.pa4;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Collections;
 
 import weka.classifiers.functions.LinearRegression;
 import weka.classifiers.Classifier;
@@ -119,10 +121,48 @@ public class PointwiseLearner extends Learner {
 	@Override
 	public Map<String, List<String>> testing(TestFeatures tf,
 			Classifier model) {
-		/*
-		 * @TODO: Your code here
-		 */
-		return null;
+		
+		Map<String, List<String>> rankings = new HashMap<String, List<String>>();
+		Instances test_dataset = tf.features;
+		Map<String, Map<String,Integer>> index_map = tf.index_map;
+		for (Map.Entry<String, Map<String,Integer>> entry1 : index_map.entrySet()){
+			String query = entry1.getKey();
+			Map<String,Integer> docMap = entry1.getValue();
+			List<Pair<String,Double>> list = new ArrayList<Pair<String,Double>>();
+			for (Map.Entry<String,Integer> entry2 : docMap.entrySet()){
+				double prediction = Double.MIN_VALUE;
+				String url = entry2.getKey();
+				Integer index = entry2.getValue();
+				try{
+					prediction = model.classifyInstance(test_dataset.get(index.intValue()));
+					//System.err.println("prediction: " + prediction);
+				}catch(Exception e){
+					System.err.println("Error classifying url " + url);
+				}
+				Pair<String,Double> p = new Pair<String,Double>(url,new Double(prediction));
+				list.add(p);
+			}
+			sortList(list);
+			rankings.put(query,convertList(list));
+		}
+		return rankings;
+	}
+	
+	private void sortList(List<Pair<String,Double>> list){
+		Collections.sort(list, new Comparator<Pair<String,Double>>(){
+			@Override
+		    public int compare(Pair<String,Double> p1, Pair<String,Double> p2) {
+		        return p1.getSecond().compareTo(p2.getSecond());
+		    }
+		});
+	}
+	
+	private List<String> convertList(List<Pair<String,Double>> list){
+		List<String> rankings = new ArrayList<String>(list.size());
+		for(int i = 0; i < list.size(); i++){
+			rankings.add(list.get(i).getFirst());
+		}
+		return rankings;
 	}
 
 }

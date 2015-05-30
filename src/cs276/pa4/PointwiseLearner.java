@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import weka.classifiers.functions.LinearRegression;
 import weka.classifiers.Classifier;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -61,10 +62,14 @@ public class PointwiseLearner extends Learner {
 
 	@Override
 	public Classifier training(Instances dataset) {
-		/*
-		 * @TODO: Your code here
-		 */
-		return null;
+		LinearRegression model = null;
+		try{
+			model = new LinearRegression();
+			model.buildClassifier(dataset);
+		}catch(Exception e){
+			System.err.println("Error training PointwiseLearner LinearRegression model");
+		}
+		return model;
 	}
 
 	@Override

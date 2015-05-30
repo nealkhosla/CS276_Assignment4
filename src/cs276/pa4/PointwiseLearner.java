@@ -99,16 +99,16 @@ public class PointwiseLearner extends Learner {
 		int index = 0;
 		for (Map.Entry<Query, List<Document>> entry : testData.entrySet()){
 			Query q = entry.getKey();
+			Map<String,Integer> mp = new HashMap<String,Integer>();
 			List<Document> documents = entry.getValue();
 			for(Document d : documents){
 				double[] instance = FormatDocument.createInstanceVector(d, q, idfs, null);
 				Instance inst = new DenseInstance(1.0,instance);
 				dataset.add(inst);
-				Map<String,Integer> mp = new HashMap<String,Integer>(1);
 				mp.put(d.url, new Integer(index));
-				index_map.put(q.query,mp);
 				index = index + 1;
 			}
+			index_map.put(q.query,mp);
 		}
 		/* Set last attribute as target */
 		dataset.setClassIndex(dataset.numAttributes() - 1);
@@ -155,6 +155,7 @@ public class PointwiseLearner extends Learner {
 		        return p1.getSecond().compareTo(p2.getSecond());
 		    }
 		});
+		Collections.reverse(list);
 	}
 	
 	private List<String> convertList(List<Pair<String,Double>> list){

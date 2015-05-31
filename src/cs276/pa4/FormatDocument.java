@@ -1,6 +1,9 @@
 package cs276.pa4;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -183,5 +186,23 @@ public class FormatDocument {
 			vector[TFTYPES.length] = 0;
 		}
 		return vector;
+	}
+	
+	public static void sortList(List<Pair<String,Double>> list){
+		Collections.sort(list, new Comparator<Pair<String,Double>>(){
+			@Override
+		    public int compare(Pair<String,Double> p1, Pair<String,Double> p2) {
+		        return p1.getSecond().compareTo(p2.getSecond());
+		    }
+		});
+		Collections.reverse(list);
+	}
+	
+	public static List<String> convertList(List<Pair<String,Double>> list){
+		List<String> rankings = new ArrayList<String>(list.size());
+		for(int i = 0; i < list.size(); i++){
+			rankings.add(list.get(i).getFirst());
+		}
+		return rankings;
 	}
 }

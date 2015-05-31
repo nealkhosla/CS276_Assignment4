@@ -142,28 +142,9 @@ public class PointwiseLearner extends Learner {
 				Pair<String,Double> p = new Pair<String,Double>(url,new Double(prediction));
 				list.add(p);
 			}
-			sortList(list);
-			rankings.put(query,convertList(list));
+			FormatDocument.sortList(list);
+			rankings.put(query,FormatDocument.convertList(list));
 		}
 		return rankings;
 	}
-	
-	private void sortList(List<Pair<String,Double>> list){
-		Collections.sort(list, new Comparator<Pair<String,Double>>(){
-			@Override
-		    public int compare(Pair<String,Double> p1, Pair<String,Double> p2) {
-		        return p1.getSecond().compareTo(p2.getSecond());
-		    }
-		});
-		Collections.reverse(list);
-	}
-	
-	private List<String> convertList(List<Pair<String,Double>> list){
-		List<String> rankings = new ArrayList<String>(list.size());
-		for(int i = 0; i < list.size(); i++){
-			rankings.add(list.get(i).getFirst());
-		}
-		return rankings;
-	}
-
 }

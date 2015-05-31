@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import weka.classifiers.Classifier;
+import weka.classifiers.functions.*;
 import weka.classifiers.functions.LibSVM;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -20,6 +21,7 @@ import weka.filters.unsupervised.attribute.Standardize;
 
 public class PairwiseLearner extends Learner {
   private LibSVM model;
+  private boolean isLinear;
   public PairwiseLearner(boolean isLinearKernel){
     try{
       model = new LibSVM();
@@ -30,6 +32,7 @@ public class PairwiseLearner extends Learner {
     if(isLinearKernel){
       model.setKernelType(new SelectedTag(LibSVM.KERNELTYPE_LINEAR, LibSVM.TAGS_KERNELTYPE));
     }
+    isLinear = isLinearKernel;
   }
   
   public PairwiseLearner(double C, double gamma, boolean isLinearKernel){
@@ -44,6 +47,7 @@ public class PairwiseLearner extends Learner {
     if(isLinearKernel){
       model.setKernelType(new SelectedTag(LibSVM.KERNELTYPE_LINEAR, LibSVM.TAGS_KERNELTYPE));
     }
+    isLinear = isLinearKernel;
   }
   
 	@Override
@@ -222,60 +226,42 @@ public class PairwiseLearner extends Learner {
 	public Map<String, List<String>> testing(TestFeatures tf,
 			Classifier model) {
 		
+		LibSVM svmModel = (LibSVM)model;
+		double[] weights = svmModel.coefficients();
 		Map<String, List<String>> rankings = new HashMap<String, List<String>>();
 		Instances test_dataset = tf.features;
 		Map<String, Map<String,Integer>> index_map = tf.index_map;
 		for (Map.Entry<String, Map<String,Integer>> entry1 : index_map.entrySet()){
 			String query = entry1.getKey();
 			Map<String,Integer> docMap = entry1.getValue();
-			List<Pair<Instance,String>> list = new ArrayList<Pair<Instance,String>>();
+			List<Pair<String,Double>> list = new ArrayList<Pair<String,Double>>();
 			for (Map.Entry<String,Integer> entry2 : docMap.entrySet()){
-				Integer index = entry2.getValue();
+				double prediction = Double.MIN_VALUE;
 				String url = entry2.getKey();
-				Instance inst = test_dataset.get(index.intValue());
-				Pair<Instance,String> p = new Pair<Instance,String>(inst,url);
+				Integer index = entry2.getValue();
+				try{
+					prediction = getScore(weights,test_dataset.get(index.intValue()).toDoubleArray());
+					//prediction = model.classifyInstance(test_dataset.get(index.intValue()));
+					//System.err.println("prediction: " + prediction);
+				}catch(Exception e){
+					System.err.println("Error classifying url " + url);
+					e.printStackTrace();
+				}
+				Pair<String,Double> p = new Pair<String,Double>(url,new Double(prediction));
 				list.add(p);
 			}
-			sortList(list,model);
-			rankings.put(query,convertList(list));
+			FormatDocument.sortList(list);
+			rankings.put(query,FormatDocument.convertList(list));
 		}
 		return rankings;
 	}
 	
-	public static void sortList(List<Pair<Instance,String>> list,Classifier model){
-		Collections.sort(list, new Comparator<Pair<Instance,String>>(){
-			@Override
-		    public int compare(Pair<Instance,String> p1, Pair<Instance,String> p2) {
-				return rank(p1.getFirst(),p2.getFirst(),model);
-		    }
-		});
-		Collections.reverse(list);
-	}
-	
-	private static int rank(Instance a, Instance b, Classifier model){
-		Instance diff = getNewInstance(a,b,false);
-		double prediction = 0;
-		try{
-			diff.setClassMissing();
-			prediction = model.classifyInstance(diff);
-			//System.err.println("prediction: " + prediction);
-		}catch(Exception e){
-			System.err.println("Error ranking in pairwise");
-			e.printStackTrace();
+	private double getScore(double[] weights, double[] vector){
+		double score = 0;
+		for(int i = 0; i < vector.length; i++){
+			score = score + weights[i]*vector[i];
 		}
-		if(prediction == 0){
-			return 1;
-		}else{
-			return -1;
-		}
-	}
-	
-	public static List<String> convertList(List<Pair<Instance,String>> list){
-		List<String> rankings = new ArrayList<String>(list.size());
-		for(int i = 0; i < list.size(); i++){
-			rankings.add(list.get(i).getSecond());
-		}
-		return rankings;
+		return score;
 	}
 
 }

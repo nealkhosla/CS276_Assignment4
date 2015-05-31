@@ -2,6 +2,8 @@ package cs276.pa4;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -107,7 +109,7 @@ public class PairwiseLearner extends Learner {
 				for(Integer j : list){
 					Instance a = new_instances.get(i.intValue());
 					Instance b = new_instances.get(j.intValue());
-					Instance diff = getNewInstance(a,b);
+					Instance diff = getNewInstance(a,b,true);
 					if(diff != null){
 						difference_instances.add(diff);
 					}
@@ -119,7 +121,7 @@ public class PairwiseLearner extends Learner {
 		return difference_instances;
 	}
 	
-	private Instance getNewInstance(Instance aInst, Instance bInst){
+	private static Instance getNewInstance(Instance aInst, Instance bInst, boolean classify){
 		double[] a = aInst.toDoubleArray();
 		double[] b = bInst.toDoubleArray();
 		double[] diff = new double[a.length];
@@ -127,17 +129,25 @@ public class PairwiseLearner extends Learner {
 			diff[i] = a[i] - b[i];
 		}
 		Instance diffInst = new DenseInstance(1.0,diff);
-		double numClass = diff[a.length-1];
-		if(numClass > 0){
+		if(classify){
+			double numClass = diff[a.length-1];
+			if(numClass > 0){
+				diff[a.length-1] = 0;
+			}
+			if(numClass < 0){
+				diff[a.length-1] = 1;
+			}
+			if(numClass == 0){
+				return null;
+			}			
+		}else{
 			diff[a.length-1] = 0;
 		}
-		if(numClass < 0){
-			diff[a.length-1] = 1;
-		}
-		if(numClass == 0){
-			return null;
-		}
 		return diffInst;
+	}
+	
+	private static void classifyInstance(Instance a){
+		
 	}
 
 	@Override
@@ -218,22 +228,52 @@ public class PairwiseLearner extends Learner {
 		for (Map.Entry<String, Map<String,Integer>> entry1 : index_map.entrySet()){
 			String query = entry1.getKey();
 			Map<String,Integer> docMap = entry1.getValue();
-			List<Pair<String,Double>> list = new ArrayList<Pair<String,Double>>();
+			List<Pair<Instance,String>> list = new ArrayList<Pair<Instance,String>>();
 			for (Map.Entry<String,Integer> entry2 : docMap.entrySet()){
-				double prediction = Double.MIN_VALUE;
-				String url = entry2.getKey();
 				Integer index = entry2.getValue();
-				try{
-					prediction = model.classifyInstance(test_dataset.get(index.intValue()));
-					//System.err.println("prediction: " + prediction);
-				}catch(Exception e){
-					System.err.println("Error classifying url " + url);
-				}
-				Pair<String,Double> p = new Pair<String,Double>(url,new Double(prediction));
+				String url = entry2.getKey();
+				Instance inst = test_dataset.get(index.intValue());
+				Pair<Instance,String> p = new Pair<Instance,String>(inst,url);
 				list.add(p);
 			}
-			FormatDocument.sortList(list);
-			rankings.put(query,FormatDocument.convertList(list));
+			sortList(list,model);
+			rankings.put(query,convertList(list));
+		}
+		return rankings;
+	}
+	
+	public static void sortList(List<Pair<Instance,String>> list,Classifier model){
+		Collections.sort(list, new Comparator<Pair<Instance,String>>(){
+			@Override
+		    public int compare(Pair<Instance,String> p1, Pair<Instance,String> p2) {
+				return rank(p1.getFirst(),p2.getFirst(),model);
+		    }
+		});
+		Collections.reverse(list);
+	}
+	
+	private static int rank(Instance a, Instance b, Classifier model){
+		Instance diff = getNewInstance(a,b,false);
+		double prediction = 0;
+		try{
+			diff.setClassMissing();
+			prediction = model.classifyInstance(diff);
+			//System.err.println("prediction: " + prediction);
+		}catch(Exception e){
+			System.err.println("Error ranking in pairwise");
+			e.printStackTrace();
+		}
+		if(prediction == 0){
+			return 1;
+		}else{
+			return -1;
+		}
+	}
+	
+	public static List<String> convertList(List<Pair<Instance,String>> list){
+		List<String> rankings = new ArrayList<String>(list.size());
+		for(int i = 0; i < list.size(); i++){
+			rankings.add(list.get(i).getSecond());
 		}
 		return rankings;
 	}

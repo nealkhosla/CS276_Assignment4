@@ -188,21 +188,30 @@ public class FormatDocument {
 		return vector;
 	}
 	
-	public static double[] createdALVector(Document d, Query q, Map<String, Double> idfs, Map<String, Map<String, Double>> trainRels){
+	public static double[] createALVector(Document d, Query q, Map<String, Double> idfs, Map<String,
+			Map<String, Double>> trainRels, BM25Scorer bm, SmallestWindowScorer sm){
 		Map<String,Map<String, Double>> docMap = getDocTermFreqs(d,q);
 		Map<String,Double> queryMap = getQueryIDFS(q,idfs);
-		double[] vector = new double[TFTYPES.length + 1];
-		for(int i = 0; i < TFTYPES.length; i++){
+		double[] vector = new double[TFTYPES.length + 2];
+		int i = 0;
+		for(i = 0; i < TFTYPES.length; i++){
 			String key = TFTYPES[i];
 			double score = dotProduct(queryMap,docMap.get(key));
 			vector[i] = score;
 		}
+		//Set the other scorers attributes
+		//bm25
+		//double bmScore = bm.getSimScore(d, q);
+		//vector[i] = bmScore;
+		//smallest_window
+		double smScore = sm.getSimScore(d, q);
+		vector[i] = smScore;
 		if(trainRels != null){
 			Map<String,Double> urlScores = trainRels.get(q.query);
 			double rel = urlScores.get(d.url);
-			vector[TFTYPES.length] = rel;
+			vector[TFTYPES.length+1] = rel;
 		}else{
-			vector[TFTYPES.length] = 0;
+			vector[TFTYPES.length+1] = 0;
 		}
 		return vector;
 	}

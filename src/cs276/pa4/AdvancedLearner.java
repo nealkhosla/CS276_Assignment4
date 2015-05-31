@@ -35,6 +35,8 @@ public class AdvancedLearner extends Learner {
 	public Instances extract_train_features(String train_data_file,
 			String train_rel_file, Map<String, Double> idfs) {
 		
+		SmallestWindowScorer smw = null;
+		BM25Scorer bm = null;
 		Standardize filter = new Standardize();
 		Instances dataset = null;
 		
@@ -45,7 +47,7 @@ public class AdvancedLearner extends Learner {
 		attributes.add(new Attribute("body_w"));
 		attributes.add(new Attribute("header_w"));
 		attributes.add(new Attribute("anchor_w"));
-		attributes.add(new Attribute("bm25"));
+		//attributes.add(new Attribute("bm25"));
 		attributes.add(new Attribute("smallest_window"));
 		ArrayList<String> classLabels = new ArrayList<>();
 		classLabels.addAll(Arrays.asList(new String[]{"+1", "-1"}));
@@ -57,12 +59,16 @@ public class AdvancedLearner extends Learner {
 		Map<Query,List<Document>> trainData = null;
 		// query -> (url -> score)
 		Map<String, Map<String, Double>> trainRels = null;
+		Map<Query,Map<String, Document>> queryDict = null;
 		try{
 			trainData = Util.loadTrainData(train_data_file);
 			trainRels = Util.loadRelData(train_rel_file);
+			queryDict = Util.bm25LoadTrainData(train_data_file);
 		}catch(Exception e){
 			System.err.println("Error loading training data");
 		}
+		smw = new SmallestWindowScorer(idfs,queryDict);
+		bm = new BM25Scorer(idfs,queryDict);
 		//Need to keep track of what instances belong to which query and also their index
 		//in the standardized instances object
 		Map<Query, List<Integer>> mapInstance = new HashMap<Query, List<Integer>>();
@@ -72,7 +78,7 @@ public class AdvancedLearner extends Learner {
 			List<Integer> list = new ArrayList<Integer>();
 			List<Document> documents = entry.getValue();
 			for(Document d : documents){
-				double[] instance = FormatDocument.createInstanceVector(d, q, idfs, trainRels);
+				double[] instance = FormatDocument.createALVector(d, q, idfs, trainRels,bm,smw);
 				Instance inst = new DenseInstance(1.0,instance);
 				list.add(new Integer(index));
 				dataset.add(inst);
@@ -148,6 +154,8 @@ public class AdvancedLearner extends Learner {
 	public TestFeatures extract_test_features(String test_data_file,
 			Map<String, Double> idfs) {
 		
+		SmallestWindowScorer smw = null;
+		BM25Scorer bm = null;
 		Standardize filter = new Standardize();
 		Instances dataset = null;
 		
@@ -158,7 +166,7 @@ public class AdvancedLearner extends Learner {
 		attributes.add(new Attribute("body_w"));
 		attributes.add(new Attribute("header_w"));
 		attributes.add(new Attribute("anchor_w"));
-		attributes.add(new Attribute("bm25"));
+		//attributes.add(new Attribute("bm25"));
 		attributes.add(new Attribute("smallest_window"));
 		attributes.add(new Attribute("relevance_class"));
 		dataset = new Instances("train_dataset", attributes, 0);
@@ -166,11 +174,15 @@ public class AdvancedLearner extends Learner {
 		/* Add data */
 		// query -> documents list
 		Map<Query,List<Document>> testData = null;
+		Map<Query,Map<String, Document>> queryDict = null;
 		try{
 			testData = Util.loadTrainData(test_data_file);
+			queryDict = Util.bm25LoadTrainData(test_data_file);
 		}catch(Exception e){
 			System.err.println("Error loading training data");
 		}
+		smw = new SmallestWindowScorer(idfs,queryDict);
+		bm = new BM25Scorer(idfs,queryDict);
 		
 		Map<String, Map<String, Integer>> index_map = new HashMap<String, Map<String,Integer>>();
 		
@@ -180,7 +192,7 @@ public class AdvancedLearner extends Learner {
 			Map<String,Integer> mp = new HashMap<String,Integer>();
 			List<Document> documents = entry.getValue();
 			for(Document d : documents){
-				double[] instance = FormatDocument.createInstanceVector(d, q, idfs, null);
+				double[] instance = FormatDocument.createALVector(d, q, idfs, null,bm,smw);
 				Instance inst = new DenseInstance(1.0,instance);
 				dataset.add(inst);
 				mp.put(d.url, new Integer(index));

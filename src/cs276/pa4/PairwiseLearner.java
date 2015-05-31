@@ -7,7 +7,6 @@ import java.util.Map;
 
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.LibSVM;
-import weka.classifiers.functions.LinearRegression;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -72,25 +71,69 @@ public class PairwiseLearner extends Learner {
 		}catch(Exception e){
 			System.err.println("Error loading training data");
 		}
+		//Need to keep track of what instances belong to which query and also their index
+		//in the standardized instances object
+		Map<Query, List<Integer>> mapInstance = new HashMap<Query, List<Integer>>();
+		int index = 0;
 		for (Map.Entry<Query, List<Document>> entry : trainData.entrySet()){
 			Query q = entry.getKey();
+			List<Integer> list = new ArrayList<Integer>();
 			List<Document> documents = entry.getValue();
 			for(Document d : documents){
 				double[] instance = FormatDocument.createInstanceVector(d, q, idfs, trainRels);
 				Instance inst = new DenseInstance(1.0,instance);
+				list.add(new Integer(index));
 				dataset.add(inst);
+				index = index + 1;
 			}
+			mapInstance.put(q, list);
 		}
 		/* Set last attribute as target */
 		dataset.setClassIndex(dataset.numAttributes() - 1);
 		Instances new_instances = null;
+		// Standardize all of the instances
 		try{
 			filter.setInputFormat(dataset);
 			new_instances = Filter.useFilter(dataset, filter);
 		}catch(Exception e){
 			System.err.println("Error filtering dataset");
 		}
-		return new_instances;
+		// Take the difference of all the documents that belong to a query and add to difference_instances
+		Instances difference_instances = new Instances("train_dataset", attributes, 0);
+		for(Map.Entry<Query, List<Integer>> entry : mapInstance.entrySet()){
+			List<Integer> list = entry.getValue();
+			for(Integer i : list){
+				for(Integer j : list){
+					Instance a = new_instances.get(i.intValue());
+					Instance b = new_instances.get(j.intValue());
+					Instance diff = getNewInstance(a,b);
+					if(diff != null){
+						difference_instances.add(diff);
+					}
+				}
+			}
+		}
+		return difference_instances;
+	}
+	
+	private Instance getNewInstance(Instance aInst, Instance bInst){
+		double[] a = aInst.toDoubleArray();
+		double[] b = bInst.toDoubleArray();
+		double[] diff = new double[a.length];
+		for(int i = 0; i < a.length; i++){
+			diff[i] = a[i] - b[i];
+		}
+		if(diff[a.length-1] > 0){
+			diff[a.length-1] = 1;
+		}
+		if(diff[a.length-1] < 0){
+			diff[a.length-1] = -1;
+		}
+		if(diff[a.length-1] == 0){
+			return null;
+		}
+		Instance diffInst = new DenseInstance(1.0,diff);
+		return diffInst;
 	}
 
 	@Override
@@ -99,6 +142,7 @@ public class PairwiseLearner extends Learner {
 			model.buildClassifier(dataset);
 		}catch(Exception e){
 			System.err.println("Error training PairwiseLearner LibSVM model");
+			e.printStackTrace();
 		}
 		return model;
 	}

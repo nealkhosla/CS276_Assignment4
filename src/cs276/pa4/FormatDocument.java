@@ -114,8 +114,8 @@ public class FormatDocument {
 	
 	//*********** Straight from Assignment 3 End ***********//
 	
-	//Need to count the terms in each dimension, compute the distance and divide each term by it.
-	private static double dimensionCount(Map<String, Double> termFreqs) {
+	//Need to count the terms in each dimension and return it squared.
+	private static double squaredDimensionCount(Map<String, Double> termFreqs) {
 		double count = 0;
 		for(Map.Entry<String,Double> entry : termFreqs.entrySet()){
 			count = count + entry.getValue().doubleValue();
@@ -128,7 +128,7 @@ public class FormatDocument {
 		double sumDistSquared = 0.0;
 		for(Map.Entry<String, Map<String, Double>> entry: termFreqs.entrySet()){
 			Map<String,Double> raw = entry.getValue();
-			sumDistSquared = sumDistSquared + dimensionCount(raw);
+			sumDistSquared = sumDistSquared + squaredDimensionCount(raw);
 		}
 		double magnitude = Math.sqrt(sumDistSquared);
 		for(Map.Entry<String, Map<String, Double>> entry: termFreqs.entrySet()){

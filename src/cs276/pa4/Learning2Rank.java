@@ -28,7 +28,7 @@ public class Learning2Rank {
 		  //boolean isLinearKernel = false;
 			learner = new PairwiseLearner(isLinearKernel);
 		} else if (task == 3) {
-			
+			learner = new AdvancedLearner();
 			/* 
 			 * @TODO: Your code here, add more features 
 			 * */
@@ -63,6 +63,7 @@ public class Learning2Rank {
 			  //boolean isLinearKernel = false;
 				learner = new PairwiseLearner(isLinearKernel);
 			} else if (task == 3) {
+				learner = new AdvancedLearner();
 
 				/* 
 				 * @TODO: Your code here, add more features 

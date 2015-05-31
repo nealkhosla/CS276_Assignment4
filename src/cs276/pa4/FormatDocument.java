@@ -188,6 +188,25 @@ public class FormatDocument {
 		return vector;
 	}
 	
+	public static double[] createdALVector(Document d, Query q, Map<String, Double> idfs, Map<String, Map<String, Double>> trainRels){
+		Map<String,Map<String, Double>> docMap = getDocTermFreqs(d,q);
+		Map<String,Double> queryMap = getQueryIDFS(q,idfs);
+		double[] vector = new double[TFTYPES.length + 1];
+		for(int i = 0; i < TFTYPES.length; i++){
+			String key = TFTYPES[i];
+			double score = dotProduct(queryMap,docMap.get(key));
+			vector[i] = score;
+		}
+		if(trainRels != null){
+			Map<String,Double> urlScores = trainRels.get(q.query);
+			double rel = urlScores.get(d.url);
+			vector[TFTYPES.length] = rel;
+		}else{
+			vector[TFTYPES.length] = 0;
+		}
+		return vector;
+	}
+	
 	public static void sortList(List<Pair<String,Double>> list){
 		Collections.sort(list, new Comparator<Pair<String,Double>>(){
 			@Override

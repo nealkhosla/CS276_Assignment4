@@ -108,34 +108,35 @@ public class FormatDocument {
 			body_hitsTF(queryWord,d.body_hits,body);
 			anchorsTF(queryWord,d.anchors,anchor);
 		}
-		//return normalizeDoc(tfs);
+		normalizeDoc(tfs);
 		return tfs;
 	}
 	
 	//*********** Straight from Assignment 3 End ***********//
 	
 	//Need to count the terms in each dimension, compute the distance and divide each term by it.
-	private static Map<String, Double> normalizeDimension(Map<String, Double> termFreqs) {
+	private static double dimensionCount(Map<String, Double> termFreqs) {
 		double count = 0;
 		for(Map.Entry<String,Double> entry : termFreqs.entrySet()){
 			count = count + entry.getValue().doubleValue();
 		}
-		Map<String, Double> normalized = new HashMap<String,Double>();
-		for(Map.Entry<String,Double> entry : termFreqs.entrySet()){
-			double value = entry.getValue().doubleValue()/count;
-			normalized.put(entry.getKey(),new Double(value));
-		}
-		return normalized;
+		return count*count;
 	}
 	
-	private static Map<String, Map<String, Double>> normalizeDoc(Map<String,Map<String,Double>> termFreqs){
-		Map<String, Map<String,Double>> normalDoc = new HashMap<String,Map<String,Double>>();
+	//Normalizes a vector by dividing each tf score by the magnitude
+	private static void normalizeDoc(Map<String,Map<String,Double>> termFreqs){
+		double sumDistSquared = 0.0;
 		for(Map.Entry<String, Map<String, Double>> entry: termFreqs.entrySet()){
 			Map<String,Double> raw = entry.getValue();
-			Map<String,Double> normalized = normalizeDimension(raw);
-			normalDoc.put(entry.getKey(), normalized);
+			sumDistSquared = sumDistSquared + dimensionCount(raw);
 		}
-		return normalDoc;
+		double magnitude = Math.sqrt(sumDistSquared);
+		for(Map.Entry<String, Map<String, Double>> entry: termFreqs.entrySet()){
+			Map<String,Double> raw = entry.getValue();
+			for(Map.Entry<String, Double> entry2: raw.entrySet()){
+				raw.put(entry2.getKey(), entry2.getValue()/magnitude);
+			}
+		}
 	}
 	
 	private static Map<String,Double> getQueryIDFS(Query q, Map<String, Double> idfs){

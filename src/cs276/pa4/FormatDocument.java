@@ -108,10 +108,35 @@ public class FormatDocument {
 			body_hitsTF(queryWord,d.body_hits,body);
 			anchorsTF(queryWord,d.anchors,anchor);
 		}
+		//return normalizeDoc(tfs);
 		return tfs;
 	}
 	
 	//*********** Straight from Assignment 3 End ***********//
+	
+	//Need to count the terms in each dimension, compute the distance and divide each term by it.
+	private static Map<String, Double> normalizeDimension(Map<String, Double> termFreqs) {
+		double count = 0;
+		for(Map.Entry<String,Double> entry : termFreqs.entrySet()){
+			count = count + entry.getValue().doubleValue();
+		}
+		Map<String, Double> normalized = new HashMap<String,Double>();
+		for(Map.Entry<String,Double> entry : termFreqs.entrySet()){
+			double value = entry.getValue().doubleValue()/count;
+			normalized.put(entry.getKey(),new Double(value));
+		}
+		return normalized;
+	}
+	
+	private static Map<String, Map<String, Double>> normalizeDoc(Map<String,Map<String,Double>> termFreqs){
+		Map<String, Map<String,Double>> normalDoc = new HashMap<String,Map<String,Double>>();
+		for(Map.Entry<String, Map<String, Double>> entry: termFreqs.entrySet()){
+			Map<String,Double> raw = entry.getValue();
+			Map<String,Double> normalized = normalizeDimension(raw);
+			normalDoc.put(entry.getKey(), normalized);
+		}
+		return normalDoc;
+	}
 	
 	private static Map<String,Double> getQueryIDFS(Query q, Map<String, Double> idfs){
 		Map<String,Double> query = new HashMap<String,Double>(1);
@@ -122,7 +147,7 @@ public class FormatDocument {
 				if(idfs.containsKey(word)){
 					query.put(word,idfs.get(word));
 				}else{
-					//Every word should be in the idfs map, right?
+					query.put(word,1.0);
 				}
 			}
 		}

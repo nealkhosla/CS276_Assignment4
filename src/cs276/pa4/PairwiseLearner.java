@@ -1,6 +1,7 @@
 package cs276.pa4;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +58,9 @@ public class PairwiseLearner extends Learner {
 		attributes.add(new Attribute("body_w"));
 		attributes.add(new Attribute("header_w"));
 		attributes.add(new Attribute("anchor_w"));
-		attributes.add(new Attribute("relevance_score"));
+		ArrayList<String> classLabels = new ArrayList<>();
+		classLabels.addAll(Arrays.asList(new String[]{"+1", "-1"}));
+		attributes.add(new Attribute("relevance_class", classLabels));
 		dataset = new Instances("train_dataset", attributes, 0);
 		
 		/* Add data */
@@ -88,8 +91,6 @@ public class PairwiseLearner extends Learner {
 			}
 			mapInstance.put(q, list);
 		}
-		/* Set last attribute as target */
-		dataset.setClassIndex(dataset.numAttributes() - 1);
 		Instances new_instances = null;
 		// Standardize all of the instances
 		try{
@@ -113,6 +114,8 @@ public class PairwiseLearner extends Learner {
 				}
 			}
 		}
+		/* Set last attribute as target */
+		difference_instances.setClassIndex(dataset.numAttributes() - 1);
 		return difference_instances;
 	}
 	
@@ -123,16 +126,17 @@ public class PairwiseLearner extends Learner {
 		for(int i = 0; i < a.length; i++){
 			diff[i] = a[i] - b[i];
 		}
-		if(diff[a.length-1] > 0){
+		Instance diffInst = new DenseInstance(1.0,diff);
+		double numClass = diff[a.length-1];
+		if(numClass > 0){
+			diff[a.length-1] = 0;
+		}
+		if(numClass < 0){
 			diff[a.length-1] = 1;
 		}
-		if(diff[a.length-1] < 0){
-			diff[a.length-1] = -1;
-		}
-		if(diff[a.length-1] == 0){
+		if(numClass == 0){
 			return null;
 		}
-		Instance diffInst = new DenseInstance(1.0,diff);
 		return diffInst;
 	}
 

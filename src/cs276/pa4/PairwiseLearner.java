@@ -10,7 +10,6 @@ import java.util.Map;
 
 import weka.classifiers.Classifier;
 import weka.classifiers.functions.*;
-import weka.classifiers.functions.LibSVM;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
@@ -149,10 +148,6 @@ public class PairwiseLearner extends Learner {
 		}
 		return diffInst;
 	}
-	
-	private static void classifyInstance(Instance a){
-		
-	}
 
 	@Override
 	public Classifier training(Instances dataset) {
@@ -223,9 +218,80 @@ public class PairwiseLearner extends Learner {
 	}
 
 	@Override
-	public Map<String, List<String>> testing(TestFeatures tf,
-			Classifier model) {
-		
+	public Map<String, List<String>> testing(TestFeatures tf, Classifier model) {
+		if(isLinear){
+			return linear(tf,model);
+		}else{
+			return nonLinear(tf,model);
+		}
+	}
+	
+	private Map<String,List<String>> nonLinear(TestFeatures tf, Classifier model){
+
+		Instances test_dataset = tf.features;
+		Map<String, Map<String,Integer>> index_map = tf.index_map;
+		Map<String, List<Pair<String,Integer>>> nonLinear_map = new HashMap<String,List<Pair<String,Integer>>>();
+		for (Map.Entry<String, Map<String,Integer>> entry1 : index_map.entrySet()){
+			String query = entry1.getKey();
+			Map<String,Integer> docMap = entry1.getValue();
+			List<Pair<String,Integer>> indexList = new ArrayList<Pair<String,Integer>>();
+			for (Map.Entry<String,Integer> entry2 : docMap.entrySet()){
+				Pair<String,Integer> indexP = new Pair<String,Integer>(entry2.getKey(),entry2.getValue());
+				indexList.add(indexP);
+			}
+			nonLinear_map.put(query, indexList);
+		}
+		Map<String, List<String>> rankings = new HashMap<String, List<String>>();
+		for(Map.Entry<String, List<Pair<String,Integer>>> entry : nonLinear_map.entrySet()){
+			String query = entry.getKey();
+			List<Pair<String,Integer>> list = entry.getValue();
+			List<String> rankedList = ranking(list,test_dataset,model);
+			rankings.put(query, rankedList);
+		}
+		return rankings;
+	}
+	
+	private List<String> ranking(List<Pair<String,Integer>> list, Instances test_dataset, Classifier model){
+		Collections.sort(list, new Comparator<Pair<String,Integer>>(){
+			@Override
+		    public int compare(Pair<String,Integer> p1, Pair<String,Integer> p2) {
+		        return rank(p1,p2,test_dataset,model);
+		    }
+		});
+		Collections.reverse(list);
+		return convertList(list);
+	}
+	
+	private int rank(Pair<String,Integer> p1,Pair<String,Integer> p2,Instances test_dataset,Classifier model){
+		Instance a = test_dataset.get(p1.getSecond().intValue());
+		Instance b = test_dataset.get(p2.getSecond().intValue());
+		Instance diff = getNewInstance(a,b,false);
+		test_dataset.add(diff);
+		double prediction = 0;
+		try{
+			prediction = model.classifyInstance(test_dataset.lastInstance());
+			//System.err.println("prediction: " + prediction);
+		}catch(Exception e){
+			System.err.println("Error in ranking nonLinear");
+			e.printStackTrace();
+		}
+		//System.err.println(prediction);
+		//if(prediction == 0) return 1;
+		if(prediction == 0) return 1;
+		if(prediction == 1) return -1;
+		return 0;
+	}
+	
+	private List<String> convertList(List<Pair<String,Integer>> list){
+		List<String> convertedList = new ArrayList<String>();
+		for(int i = 0; i < list.size(); i++){
+			Pair<String,Integer> p = list.get(i);
+			convertedList.add(p.getFirst());
+		}
+		return convertedList;
+	}
+	
+	private Map<String,List<String>> linear(TestFeatures tf, Classifier model){
 		LibSVM svmModel = (LibSVM)model;
 		double[] weights = svmModel.coefficients();
 		Map<String, List<String>> rankings = new HashMap<String, List<String>>();

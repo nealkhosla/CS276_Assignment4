@@ -218,7 +218,7 @@ public class BM25Scorer extends AScorer {
 			double den = w+k1;
 			score = score + (num/den);
 		}
-		score = score + pageRankLambda*pg;
+		//score = score + pageRankLambda*pg;
 		return score;
 	}
 
